@@ -1,4 +1,34 @@
 <header class="topbar">
+  <div class="nav-menu-wrap">
+    <button class="nav-menu-trigger" type="button" (click)="toggleMenu()" [attr.aria-expanded]="menuOpen()" aria-controls="archive-menu"><span class="menu-glyph">☰</span><span>MENU</span></button>
+    @if (menuOpen()) {
+      <nav class="archive-menu" id="archive-menu" aria-label="Portfolio navigation">
+        <p class="menu-kicker">THE PERSONAL ARCHIVE</p>
+        <div class="menu-eras-label">THE ERAS <span>＋</span></div>
+        @for (age of categories(); track age.slug) {
+          <div class="menu-era">
+            <div class="menu-era-line"><a [routerLink]="['/category', age.slug]" (click)="closeMenu()"><span>{{ age.numeral }}</span>{{ age.title }}</a><button type="button" (click)="toggleEra(age.slug)" [attr.aria-label]="'Show sins in ' + age.title" [attr.aria-expanded]="expandedEra() === age.slug">{{ expandedEra() === age.slug ? '−' : '+' }}</button></div>
+            @if (expandedEra() === age.slug) {
+              <div class="menu-sins">@for (character of age.sins; track character.slug) {
+                <div class="menu-sin">
+                  <div class="menu-sin-line"><a [routerLink]="['/sin', character.slug]" (click)="closeMenu()"><span>{{ character.letter }}</span>{{ character.name }}</a>
+                    @if (projectsForSin(character.slug).length > 0) { <button type="button" (click)="toggleSin(character.slug)" [attr.aria-label]="'Show projects under ' + character.name" [attr.aria-expanded]="expandedSin() === character.slug">{{ expandedSin() === character.slug ? '−' : '+' }}</button> }
+                  </div>
+                  @if (expandedSin() === character.slug) { <div class="menu-projects">@for (work of projectsForSin(character.slug); track work.slug) { <a [routerLink]="['/project', work.slug]" (click)="closeMenu()">↳ &nbsp; {{ work.name }}</a> }</div> }
+                </div>
+              }</div>
+            }
+          </div>
+        }
+        <div class="menu-links">
+          <a routerLink="/about" (click)="closeMenu()">ABOUT ME <span>↗</span></a>
+          <a routerLink="/socials" (click)="closeMenu()">SOCIALS <span>↗</span></a>
+          <a routerLink="/skills" (click)="closeMenu()">SKILLS <span>↗</span></a>
+          <a routerLink="/projects" (click)="closeMenu()">PROJECTS <span>↗</span></a>
+        </div>
+      </nav>
+    }
+  </div>
   <a class="wordmark" routerLink="/" aria-label="Twenty Four Sins home"><span class="wordmark-mark">ζ</span><span>My<br>Portfolio</span></a>
   <span class="edition">A PERSONAL ARCHIVE <i>·</i> MMXXIV</span>
   <a class="index-link" routerLink="/">INDEX <span>↗</span></a>
@@ -65,7 +95,127 @@
     <section class="sin-page page-wrap">
       <a class="back-link" [routerLink]="['/category', categoryForSin(character.slug)?.slug]">← &nbsp; RETURN TO THE TREE</a>
       <article class="sin-record"><div class="sin-number">{{ character.number.toString().padStart(2, '0') }} <span>/ 24</span></div><div class="sin-letter">{{ character.letter }}</div><p class="eyebrow">THE SIN OF {{ character.name.toUpperCase() }}</p><h1>{{ character.title }}</h1><div class="record-rule"></div><p class="sin-description">{{ character.description }}</p><div class="origin-note"><span>THE SYMBOL &nbsp; / &nbsp; ITS ORIGIN</span><p>{{ character.origin }}</p></div><a class="text-link" routerLink="/">RETURN TO THE CHRONICLE <span>↗</span></a></article>
+      @if (projectsForSin(character.slug).length > 0) {
+        <section class="sin-projects" aria-label="Projects under this sin">
+          <div class="sin-projects-heading"><div><p class="eyebrow">WORKS UNDER {{ character.name.toUpperCase() }}</p><h2>Born beneath<br><em>this symbol.</em></h2></div><span>{{ projectsForSin(character.slug).length.toString().padStart(2, '0') }} PROJECT{{ projectsForSin(character.slug).length === 1 ? '' : 'S' }}</span></div>
+          <div class="sin-project-grid">@for (work of projectsForSin(character.slug); track work.slug) {
+            <a class="sin-project-card" [routerLink]="['/project', work.slug]"><span class="sin-project-meta">{{ eraForSin(character.slug)?.title }} &nbsp; › &nbsp; {{ character.name }}</span><h3>{{ work.name }}</h3><p>{{ work.subtitle }}</p><span class="sin-project-open">OPEN PROJECT &nbsp; ↗</span></a>
+          }</div>
+        </section>
+      }
       <div class="record-footer"><span>THE GREEK ALPHABET &nbsp;·&nbsp; {{ character.number.toString().padStart(2, '0') }}</span><span>AN ONGOING BODY OF WORK</span></div>
+    </section>
+  }
+
+  @if (view() === 'projects') {
+    <section class="archive-page">
+      <div class="archive-heading"><p class="eyebrow">THE PERSONAL ARCHIVE &nbsp; / &nbsp; PROJECTS</p><h1>Search the <em>archive.</em></h1><p>Move through eras, names, and works with a single search.</p></div>
+      <div class="archive-tools"><label class="archive-search"><span>⌕</span><input type="search" placeholder="Search eras, sins, or projects…" [value]="searchQuery()" (input)="setSearch($event)" aria-label="Search all archive entries"><kbd>LIVE</kbd></label><label class="sort-control"><span>SORT</span><select [value]="sortOrder()" (change)="setSort($event)" aria-label="Sort entries"><option value="asc">A — Z</option><option value="desc">Z — A</option></select></label></div>
+      @for (kind of ['era', 'sin', 'project']; track kind) {
+        <section class="archive-group" [class]="'archive-group archive-group-' + kind">
+          <div class="archive-group-heading"><h2>{{ kind === 'era' ? 'The Eras' : kind === 'sin' ? 'The Sins' : 'The Works' }}</h2><span>{{ entriesFor(kind).length.toString().padStart(2, '0') }} ENTRIES</span></div>
+          @for (entry of entriesFor(kind); track entry.href.join('/')) {
+            <a class="archive-entry" [class]="'archive-entry archive-entry-' + entry.kind + ' archive-entry-' + entry.accent" [routerLink]="entry.href"><span class="archive-entry-kind">{{ entry.kind === 'era' ? 'ERA' : entry.kind === 'sin' ? 'SIN' : 'PROJECT' }}</span><span class="archive-entry-main"><strong>{{ entry.name }}</strong><small>{{ entry.subtitle }}</small><span class="archive-breadcrumb">{{ entry.path }}</span></span><span class="archive-entry-arrow">↗</span></a>
+          }
+        </section>
+      }
+      @if (visibleEntries().length === 0) { <p class="archive-empty">No names found in this volume. Try another search.</p> }
+      @if (categories().length === 0) { <p class="archive-empty">The eras and sins will appear when the archive is connected.</p> }
+    </section>
+  }
+
+  @if (view() === 'project' && selectedProject(); as work) {
+    @if (work.kind === 'library') {
+      <app-library-docs [project]="work" />
+    } @else {
+    <article class="project-detail">
+      <header class="project-hero">
+        <a class="back-link" [routerLink]="['/sin', work.sinSlug]">← &nbsp; RETURN TO {{ work.sinSlug.toUpperCase() }}</a>
+        <p class="eyebrow">A WORK FROM THE ARCHIVE &nbsp; / &nbsp; PROJECT</p>
+        <h1>{{ work.name }}<em>.</em></h1>
+        <p class="project-lede">{{ work.subtitle }}</p>
+        <div class="project-stack"><span>BUILT WITH</span>@for (technology of work.stack; track technology) { <b>{{ technology }}</b> }</div>
+      </header>
+      <section class="project-section project-intro"><div class="project-section-index">I &nbsp; / &nbsp; THE IDEA</div><div><h2>{{ work.overviewHeading }}</h2><p>{{ work.description }}</p></div></section>
+      @if (work.videoUrl) {
+        <section class="project-film" aria-labelledby="project-film-title"><div class="project-film-heading"><span>THE WORKING RITUAL &nbsp; / &nbsp; 01</span><h2 id="project-film-title">From command to canvas.</h2></div><video autoplay loop muted playsinline controls preload="auto" [attr.aria-label]="work.name + ' walkthrough'"><source [src]="work.videoUrl" type="video/mp4">Your browser does not support embedded video.</video><p class="film-caption">A short walkthrough of {{ work.name }}. <a [href]="work.videoUrl" target="_blank" rel="noreferrer">OPEN VIDEO ↗</a></p></section>
+      }
+      <section class="project-section project-how"><div class="project-section-index">II &nbsp; / &nbsp; HOW IT WORKS</div><div><h2>From first step<br>to finished work.</h2><div class="project-steps">@for (step of work.steps; track step.title; let i = $index) { <div><span>{{ (i + 1).toString().padStart(2, '0') }}</span><h3>{{ step.title }}</h3><p>{{ step.text }}</p></div> }</div></div></section>
+      @if (work.highlights; as highlights) {
+        <section class="project-highlights"><p class="eyebrow">WHAT IT OFFERS</p><div class="project-highlight-grid">@for (highlight of highlights; track highlight.title) { <article><span>✳</span><h3>{{ highlight.title }}</h3><p>{{ highlight.text }}</p></article> }</div></section>
+      }
+      @if (work.installation; as install) {
+        <section class="project-install"><div class="project-section-index">III &nbsp; / &nbsp; INSTALLATION</div><div class="project-install-content"><h2>Install the tool.</h2><p>{{ install.intro }}</p>@for (command of install.commands; track command.label) { <div class="command-block"><span>{{ command.label }}</span><pre><code>{{ command.code }}</code></pre></div> }@if (install.note) { <p class="project-note">{{ install.note }}</p> }</div></section>
+      }
+      @if (work.usage; as usage) {
+        <section class="project-usage"><div class="project-section-index">IV &nbsp; / &nbsp; DAILY USE</div><div><h2>{{ usage.heading }}</h2><p>{{ usage.intro }}</p><div class="command-block"><span>{{ usage.commandLabel }}</span><pre><code>{{ usage.command }}</code></pre></div><p>{{ usage.after }}</p></div></section>
+      }
+      @if (work.templates?.length) {
+        <section class="project-templates"><p class="eyebrow">THE TEMPLATE LIBRARY</p><h2>{{ work.templates?.length }} starting points.</h2><div class="template-list">@for (template of work.templates; track template) { <span>{{ template }}</span> }</div></section>
+      }
+      @if (work.uninstall; as uninstall) {
+        <section class="project-uninstall"><div><p class="eyebrow">WHEN THE WORK IS DONE</p><h2>Uninstall.</h2><p>{{ uninstall.intro }}</p></div><div class="command-block"><span>RUN FROM THE REPOSITORY DIRECTORY</span><pre><code>{{ uninstall.command }}</code></pre></div></section>
+      }
+      <footer class="project-endnote"><div><span>THE SOURCE &nbsp; / &nbsp; GITHUB</span><h2>Keep exploring the code.</h2><p>Browse the source, templates, and project details in the repository.</p></div><a class="github-project-link" [href]="work.repository" target="_blank" rel="noreferrer">VISIT {{ work.name.toUpperCase() }} ON GITHUB <span>↗</span></a></footer>
+    </article>
+    }
+  }
+
+  @if (view() === 'about') {
+    <section class="editorial-page">
+      <p class="eyebrow">A NOTE FROM THE ARCHIVIST</p><h1>About <em>me.</em></h1>
+      <p class="editorial-deck">Computer science student, systems-minded builder, and lifelong learner.</p>
+      <div class="editorial-rule"></div>
+      <p class="editorial-body">I enjoy building systems from the ground up and understanding how they work beneath the surface. I’m especially drawn to systems engineering, computer architecture, Linux, and the ideas that connect different areas of computer science. I like learning across domains and technologies, then turning that curiosity into practical software and hardware experiments.</p>
+      <p class="editorial-body">I’m open to work across software domains, except frontend development.</p>
+      <section class="about-tech">
+        <div class="about-tech-heading"><p class="eyebrow">AREAS I LIKE TO EXPLORE</p><p>My projects move between software, hardware, and the systems that connect them.</p></div>
+        <div class="about-tech-grid">
+          <article><span>01 &nbsp; / &nbsp; SYSTEMS ENGINEERING</span><h2>Systems engineering</h2><p>Linux, operating systems, filesystems, bootloaders, compilers, and hypervisors. I enjoy designing and understanding systems close to the machine with Rust, C, C++, and x86 assembly.</p></article>
+          <article><span>02 &nbsp; / &nbsp; BACKEND ENGINEERING</span><h2>Backend systems</h2><p>APIs, services, databases, and the infrastructure behind applications. I’m interested in building dependable backend software and understanding how its components communicate, scale, and handle data.</p></article>
+          <article><span>03 &nbsp; / &nbsp; NETWORKS</span><h2>Protocols &amp; infrastructure</h2><p>From IP, ICMP, and DNS to web services, distributed tools, and storage. I’m interested in how reliable systems communicate and work together.</p></article>
+          <article><span>04 &nbsp; / &nbsp; INTELLIGENCE</span><h2>AI, ML &amp; language</h2><p>Search and NLP, machine learning, LLMs, retrieval augmented generation, model adaptation, and reinforcement learning. I’m curious about making tool-using AI systems more capable and dependable.</p></article>
+          <article><span>05 &nbsp; / &nbsp; ROBOTICS</span><h2>Embedded &amp; physical systems</h2><p>Rover navigation, sensors, Gazebo simulation, firmware, and custom electronics. I like seeing software meet physical constraints through devices such as ESP boards and Raspberry Pi.</p></article>
+          <article><span>06 &nbsp; / &nbsp; FINANCIAL TECHNOLOGY</span><h2>Software &amp; finance</h2><p>Banking technology, payments, capital markets, and the databases behind them. I’m interested in the engineering challenges where financial systems and software meet.</p></article>
+        </div>
+      </section>
+      <div class="editorial-rule"></div>
+      <p class="eyebrow">EDUCATION</p>
+      <div class="education-entry"><div><strong>B.Tech, Computer Science &amp; Financial Technology</strong><span>MIT Manipal · Third year</span></div><b>CGPA 9.59 / 10</b></div>
+      <div class="education-entry"><div><strong>12th · HSCE Board</strong><span>89% · Bifocal subject: Electrical Maintenance</span></div></div>
+      <div class="education-entry"><div><strong>10th · Rustomjee Cambridge International School</strong><span>96% (PCMB) · 93.5% (PCMBE)</span></div></div>
+      <div class="education-entry"><div><strong>JEE Main</strong><span>96.7 percentile</span></div></div>
+      <div class="editorial-rule"></div>
+      <p class="eyebrow">OUTSIDE THE TERMINAL</p>
+      <p class="editorial-body">Away from the keyboard, I enjoy swimming and reading books. I’m also an audiophile who loves listening to music, and I spend time tinkering with electronics, reading manga, watching anime, and playing games.</p>
+    </section>
+  }
+  @if (view() === 'socials') {
+    <section class="editorial-page socials-page"><p class="eyebrow">ELSEWHERE IN THE WORLD</p><h1>Find me <em>elsewhere.</em></h1><p class="editorial-deck">Projects, problem solving, and the path between them.</p><div class="editorial-rule"></div>
+      <div class="social-overview"><div><strong>03</strong><span>PLATFORMS</span></div><div><strong>{{ projects.length.toString().padStart(2, '0') }}</strong><span>FEATURED BUILDS</span></div><div><strong>01</strong><span>PROFESSIONAL PROFILE</span></div></div>
+      <div class="social-grid">
+        <a class="social-card social-github" href="https://github.com/IhitplayzYT" target="_blank" rel="noreferrer">
+          <div class="social-card-top"><span class="social-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 .9a11.1 11.1 0 0 0-3.51 21.63c.55.1.76-.24.76-.53v-2.08c-3.1.67-3.76-1.32-3.76-1.32-.5-1.28-1.23-1.62-1.23-1.62-1.01-.69.08-.68.08-.68 1.12.08 1.71 1.15 1.71 1.15.99 1.7 2.6 1.21 3.23.92.1-.72.39-1.21.7-1.49-2.48-.28-5.09-1.24-5.09-5.52 0-1.22.44-2.22 1.15-3-.12-.28-.5-1.42.11-2.96 0 0 .94-.3 3.05 1.15a10.6 10.6 0 0 1 5.55 0c2.12-1.45 3.05-1.15 3.05-1.15.61 1.54.23 2.68.12 2.96.71.78 1.14 1.78 1.14 3 0 4.29-2.61 5.23-5.1 5.51.4.35.75 1.02.75 2.06V22c0 .29.2.63.76.52A11.1 11.1 0 0 0 12 .9Z"/></svg></span><span class="social-index">01 / CODE</span></div>
+          <h2>GitHub <span>↗</span></h2><p>Systems, tools, experiments, and the code behind my projects.</p><div class="social-card-stats"><span><b>{{ projects.length.toString().padStart(2, '0') }}</b> portfolio builds</span><span>Rust · C · AI/ML</span></div><div class="social-card-handle">@IhitplayzYT</div>
+        </a>
+        <a class="social-card social-leetcode" href="https://leetcode.com/u/Azulite_RevZ/" target="_blank" rel="noreferrer">
+          <div class="social-card-top"><span class="social-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m8.2 7-5 5 5 5M15.8 7l5 5-5 5M13.7 4 10.3 20"/></svg></span><span class="social-index">02 / PRACTICE</span></div>
+          <h2>LeetCode <span>↗</span></h2><p>A place to sharpen problem solving and algorithmic thinking.</p><div class="social-card-stats"><span><b>DSA</b> focus</span><span>Patterns · Precision</span></div><div class="social-card-handle">@Azulite_RevZ</div>
+        </a>
+        <a class="social-card social-linkedin" href="https://www.linkedin.com/in/ihit-acharya/" target="_blank" rel="noreferrer">
+          <div class="social-card-top"><span class="social-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 8.5h3.4V19H5zM6.7 3.5a1.95 1.95 0 1 0 0 3.9 1.95 1.95 0 0 0 0-3.9ZM11 8.5h3.25v1.44h.05a3.57 3.57 0 0 1 3.2-1.76c3.42 0 4.05 2.25 4.05 5.18V19h-3.4v-5c0-1.2-.02-2.75-1.68-2.75-1.68 0-1.94 1.31-1.94 2.66V19H11z"/></svg></span><span class="social-index">03 / NETWORK</span></div>
+          <h2>LinkedIn <span>↗</span></h2><p>Professional updates, learning, and connections around technology.</p><div class="social-card-stats"><span><b>MIT</b> Manipal</span><span>CS &amp; Financial Technology</span></div><div class="social-card-handle">Ihit Acharya · 2024—2028</div>
+        </a>
+      </div>
+    </section>
+  }
+  @if (view() === 'skills') {
+    <section class="editorial-page"><p class="eyebrow">TOOLS OF THE CRAFT</p><h1>Skills &amp; <em>practice.</em></h1><p class="editorial-deck">Languages, platforms, and technologies from my GitHub profile.</p><div class="editorial-rule"></div>
+      <h2 class="skills-heading">Languages</h2><div class="skills-list"><span>Rust</span><span>Go</span><span>Java</span><span>Python</span><span>C</span><span>C++</span><span>JavaScript</span><span>TypeScript</span><span>PHP</span><span>Kotlin</span><span>Assembly</span><span>Bash</span></div>
+      <h2 class="skills-heading">Systems &amp; Backend</h2><div class="skills-list"><span>Linux</span><span>Tokio</span><span>Axum</span><span>Spring Boot</span><span>FastAPI</span><span>Nginx</span><span>Apache Kafka</span><span>Kubernetes</span><span>gRPC</span><span>Prost &amp; Tonic</span><span>WebSockets</span><span>Protocol Buffers</span><span>Rust procedural macros</span></div>
+      <h2 class="skills-heading">Databases &amp; Data</h2><div class="skills-list"><span>PostgreSQL</span><span>MySQL</span><span>Oracle SQL</span><span>Redis</span><span>Neo4j</span><span>Vector databases</span><span>Supabase</span><span>NumPy</span><span>Pandas</span><span>Matplotlib</span><span>Seaborn</span></div>
+      <h2 class="skills-heading">AI &amp; Machine Learning</h2><div class="skills-list"><span>Machine Learning</span><span>Deep Learning</span><span>Scikit-learn</span><span>TensorFlow</span><span>Keras</span><span>PyTorch</span><span>Hugging Face</span><span>OpenCV</span><span>CUDA</span></div>
+      <h2 class="skills-heading">Embedded, Robotics &amp; Web</h2><div class="skills-list"><span>Arduino</span><span>ESP32</span><span>Raspberry Pi</span><span>PlatformIO</span><span>ROS 2 Humble</span><span>HTML5</span><span>CSS3</span><span>React</span><span>Ratatui</span></div>
     </section>
   }
 </main>

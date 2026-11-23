@@ -1,0 +1,160 @@
+{
+  "crates": [
+    {
+      "name": "lib",
+      "slug": "lib",
+      "summary": "Go package exports for BalET load-balancer types, selection constants, constructors, and request logging.",
+      "count": 13
+    }
+  ],
+  "items": [
+    {
+      "id": "balet-lib-struct-server",
+      "crate": "lib",
+      "module": "lib",
+      "name": "Server",
+      "kind": "struct",
+      "signature": "type Server struct { /* package-private fields */",
+      "summary": "Backend endpoint type. Its ip and weight fields are unexported, so external Go packages cannot construct or configure Server values.",
+      "path": "lib/balet.go",
+      "example": "// Server fields are package-private in the current source."
+    },
+    {
+      "id": "balet-lib-struct-request",
+      "crate": "lib",
+      "module": "lib",
+      "name": "Request",
+      "kind": "struct",
+      "signature": "type Request struct { /* package-private fields */",
+      "summary": "Request data type. Its method, URL, and body fields are unexported, limiting external construction.",
+      "path": "lib/balet.go",
+      "example": "// Request fields are package-private in the current source."
+    },
+    {
+      "id": "balet-lib-enum-algo",
+      "crate": "lib",
+      "module": "lib",
+      "name": "Algo",
+      "kind": "enum",
+      "signature": "type Algo int",
+      "summary": "Selector type for the package\u2019s round-robin, least-connections, and weighted-connections strategies.",
+      "path": "lib/balet.go",
+      "example": "var algorithm lib.Algo = lib.RoundRobin"
+    },
+    {
+      "id": "balet-lib-variant-algo-roundrobin",
+      "crate": "lib",
+      "module": "lib",
+      "name": "RoundRobin",
+      "kind": "variant",
+      "signature": "RoundRobin Algo = iota",
+      "summary": "Select the round-robin strategy.",
+      "path": "lib/balet.go",
+      "example": "algorithm := lib.RoundRobin",
+      "parent": "Algo"
+    },
+    {
+      "id": "balet-lib-variant-algo-leastconnections",
+      "crate": "lib",
+      "module": "lib",
+      "name": "LeastConnections",
+      "kind": "variant",
+      "signature": "LeastConnections",
+      "summary": "Select the fewest-active-connections strategy.",
+      "path": "lib/balet.go",
+      "example": "algorithm := lib.LeastConnections",
+      "parent": "Algo"
+    },
+    {
+      "id": "balet-lib-variant-algo-weightedconnections",
+      "crate": "lib",
+      "module": "lib",
+      "name": "WeightedConnections",
+      "kind": "variant",
+      "signature": "WeightedConnections",
+      "summary": "Select weighted connections using each server\u2019s configured weight.",
+      "path": "lib/balet.go",
+      "example": "algorithm := lib.WeightedConnections",
+      "parent": "Algo"
+    },
+    {
+      "id": "balet-lib-struct-logmanager",
+      "crate": "lib",
+      "module": "lib",
+      "name": "LogManager",
+      "kind": "struct",
+      "signature": "type LogManager struct { /* internal buffer and flush state */",
+      "summary": "Thread-safe request/response logger. Construct it with NewLogManager and use Log or LazyLog.",
+      "path": "lib/balet.go",
+      "example": "logger := lib.NewLogManager(\"requests.log\", 100, 4096)"
+    },
+    {
+      "id": "balet-lib-function-newlogmanager",
+      "crate": "lib",
+      "module": "lib",
+      "name": "NewLogManager",
+      "kind": "function",
+      "signature": "func NewLogManager(fpath string, flsh uint64, mx_l uint64) LogManager",
+      "summary": "Create a log manager. flsh controls the lazy flush interval; mx_l sets the buffer-size limit.",
+      "path": "lib/balet.go",
+      "example": "logger := lib.NewLogManager(\"requests.log\", 100, 4096)"
+    },
+    {
+      "id": "balet-lib-method-logmanager-log",
+      "crate": "lib",
+      "module": "lib",
+      "name": "Log",
+      "kind": "method",
+      "signature": "func (l *LogManager) Log(reqstr string, resp string)",
+      "summary": "Append a request and response pair to the configured log file immediately.",
+      "path": "lib/balet.go",
+      "example": "logger.Log(\"GET /health\", \"200 OK\")",
+      "parent": "LogManager"
+    },
+    {
+      "id": "balet-lib-method-logmanager-lazylog",
+      "crate": "lib",
+      "module": "lib",
+      "name": "LazyLog",
+      "kind": "method",
+      "signature": "func (l *LogManager) LazyLog(reqstr string, resp string)",
+      "summary": "Buffer a request/response log entry and flush according to the configured thresholds.",
+      "path": "lib/balet.go",
+      "example": "logger.LazyLog(\"GET /health\", \"200 OK\")",
+      "parent": "LogManager"
+    },
+    {
+      "id": "balet-lib-struct-balet",
+      "crate": "lib",
+      "module": "lib",
+      "name": "BalEt",
+      "kind": "struct",
+      "signature": "type BalEt struct { /* internal queue, servers, and scheduler state */",
+      "summary": "Value returned by NewBalET. Its fields and operational methods are unexported in the current source, so consumers cannot configure backends or submit requests through the package API.",
+      "path": "lib/balet.go",
+      "example": "balancer := lib.NewBalET(30, 1000, \"http://localhost:3000\")\n_ = balancer"
+    },
+    {
+      "id": "balet-lib-function-newbalet",
+      "crate": "lib",
+      "module": "lib",
+      "name": "NewBalET",
+      "kind": "function",
+      "signature": "func NewBalET(timeout uint64, buff_l uint64, srvr_root_pfx string) BalEt",
+      "summary": "Create the load-balancer value with a timeout, buffered request capacity, and backend URL prefix. The current package does not export its server-registration or request-dispatch methods.",
+      "path": "lib/balet.go",
+      "example": "balancer := lib.NewBalET(30, 1000, \"http://localhost:3000\")\n_ = balancer"
+    },
+    {
+      "id": "balet-lib-function-if",
+      "crate": "lib",
+      "module": "lib",
+      "name": "IF",
+      "kind": "function",
+      "signature": "func IF[T any](cond bool, if_true T, if_false T) T",
+      "summary": "Return if_true when cond is true; otherwise return if_false.",
+      "path": "lib/balet.go",
+      "example": "endpoint := lib.IF(configured != \"\", configured, \"http://localhost:3000\")"
+    }
+  ]
+}

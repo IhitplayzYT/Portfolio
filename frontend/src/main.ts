@@ -7,6 +7,11 @@ const routes: Routes = [
   { path: '', component: AppComponent },
   { path: 'category/:slug', component: AppComponent },
   { path: 'sin/:slug', component: AppComponent },
+  { path: 'about', component: AppComponent },
+  { path: 'socials', component: AppComponent },
+  { path: 'skills', component: AppComponent },
+  { path: 'projects', component: AppComponent },
+  { path: 'project/:slug', component: AppComponent },
   { path: '**', redirectTo: '' }
 ];
 

@@ -1,0 +1,98 @@
+<article class="library-doc-page">
+  <header class="library-doc-hero">
+    <a class="back-link" [routerLink]="['/sin', project().sinSlug]">← &nbsp; RETURN TO {{ project().sinSlug.toUpperCase() }}</a>
+    <p class="eyebrow">THE PERSONAL ARCHIVE &nbsp; / &nbsp; {{ (project().language ?? 'LIBRARY').toUpperCase() }} LIBRARY</p>
+    <div class="library-doc-title-row"><div><h1>{{ project().name }}<em>.</em></h1><p class="library-doc-lede">{{ project().subtitle }}</p></div><span class="library-doc-mark">λ</span></div>
+    <p class="library-doc-intro">{{ project().description }}</p>
+    <div class="library-doc-stats"><div><strong>{{ catalog().crates.length.toString().padStart(2, '0') }}</strong><span>CRATES</span></div><div><strong>{{ catalog().items.length.toLocaleString() }}</strong><span>PUBLIC API ITEMS</span></div><div><strong>RUST</strong><span>LANGUAGE</span></div></div>
+    <div class="project-stack"><span>TOOLS &amp; DOMAINS</span>@for (technology of project().stack; track technology) { <b>{{ technology }}</b> }</div>
+  </header>
+
+  <section class="library-quickstart">
+    <div class="library-quickstart-grid"><div><p class="eyebrow">GETTING STARTED</p><h2>{{ project().gettingStartedHeading }}</h2><p>{{ project().gettingStartedDescription }}</p></div><div class="library-code-panel"><span>{{ (project().dependencyLabel ?? 'DEPENDENCIES').toUpperCase() }}</span><pre><code>{{ project().dependencySnippet }}</code></pre></div></div>
+    <div class="library-quickstart-grid library-quickstart-example"><div><span class="library-example-label">{{ (project().quickstartLabel ?? 'QUICKSTART').toUpperCase() }}</span><p>{{ project().quickstartDescription }}</p></div><div class="library-code-panel"><span>{{ (project().language ?? 'CODE').toUpperCase() }}</span><pre><code>{{ project().quickstartSnippet }}</code></pre></div></div>
+  </section>
+
+  <section class="library-reference" id="api-reference">
+    <div class="library-api-heading"><div><p class="eyebrow">API REFERENCE</p><h2>Find your way<br>through the crates.</h2></div><span>SEARCH TYPES, METHODS, FIELDS, VARIANTS &amp; FUNCTIONS</span></div>
+    <div class="library-search-wrap">
+      <label class="library-api-search"><span>⌕</span><input type="search" placeholder="Search the public API…" [value]="query()" (input)="setQuery($event)" aria-label="Search the AiuWlz public API"><kbd>LIVE</kbd></label>
+      @if (query().trim()) {
+        <div class="library-search-results" role="listbox" aria-label="API search results">
+          <div class="library-search-results-head"><strong>{{ matchingItems().length.toLocaleString() }} matches</strong><span>SELECT TO OPEN ITS CRATE AND JUMP TO IT</span></div>
+          @for (match of searchResults(); track match.item.id) {
+            <a role="option" [href]="'#api-' + match.item.id" (click)="navigateTo($event, match.item, match.crate, match.module)"><span class="api-kind-chip">{{ match.item.kind }}</span><span class="api-result-copy"><strong>{{ match.item.name }}</strong><small>{{ match.item.crate }} › {{ match.item.module }} @if (match.item.parent) { › {{ match.item.parent }} }</small></span><code>{{ match.item.signature }}</code><span class="api-result-arrow">↗</span></a>
+          }
+          @if (matchingItems().length > searchResults().length) { <p class="library-more-results">Showing the strongest {{ searchResults().length }} matches. Refine the search to narrow the list.</p> }
+          @if (matchingItems().length === 0) { <p class="library-more-results">No matching API item. Try another name or type.</p> }
+        </div>
+      }
+    </div>
+    <p class="library-api-note">Open a crate, then a module. Type details keep each struct, enum, or trait together with its members; usage examples are grouped and annotated instead of split into one block per symbol.</p>
+
+    <nav class="library-crate-index" aria-label="Workspace crates">
+      @for (crateDoc of crateDocs(); track crateDoc.crate.slug) {
+        <button type="button" (click)="jumpToCrate(crateDoc.crate)"><span>{{ crateDoc.crate.name }}</span><small>{{ crateDoc.crate.count }}</small></button>
+      }
+    </nav>
+
+    @for (crateDoc of crateDocs(); track crateDoc.crate.slug) {
+      <details class="library-crate" [id]="'crate-' + crateDoc.crate.slug" [open]="expandedCrate() === crateDoc.crate.slug">
+        <summary class="library-crate-heading"><span class="library-crate-glyph">{{ crateDoc.crate.name.slice(0, 1) }}</span><span class="library-crate-title"><small>{{ crateDoc.modules.length }} MODULES &nbsp; / &nbsp; {{ crateDoc.crate.count }} PUBLIC ITEMS</small><strong>{{ crateDoc.crate.name }}</strong><em>{{ crateDoc.crate.summary }}</em></span><span class="library-disclosure">+</span></summary>
+        <div class="library-module-list">
+          @for (module of crateDoc.modules; track module.slug) {
+            <details class="library-module" [id]="'module-' + module.slug" [open]="expandedModule() === module.slug">
+              <summary><span>{{ crateDoc.crate.name }} :: {{ module.name }}</span><small>{{ module.count }} ITEMS</small><b>+</b></summary>
+              <div class="library-module-content">
+                @if (module.functions.length) {
+                  <section class="library-api-group">
+                    <h3>Free functions &amp; macros <small>{{ module.functions.length }}</small></h3>
+                    <div class="library-api-list">
+                      @for (item of module.functions; track item.id) { <article class="library-api-row" [id]="'api-' + item.id"><div><span class="api-kind-chip">{{ item.kind }}</span><strong>{{ item.name }}</strong></div><code>{{ item.signature }}</code><p>{{ item.summary }}</p></article> }
+                    </div>
+                    <details class="library-usage-block"><summary>VIEW ANNOTATED USAGE EXAMPLES <span>{{ module.functions.length }}</span></summary><pre><code>@for (item of module.functions; track item.id) {<span>// {{ item.summary }}
+{{ item.example }}
+
+</span>}</code></pre></details>
+                  </section>
+                }
+
+                @for (group of module.types; track group.item.id) {
+                  <details class="library-type" [id]="'api-' + group.item.id" [open]="expandedType() === group.item.id">
+                    <summary class="library-type-summary"><span class="api-kind-chip">{{ group.item.kind }}</span><strong>{{ group.item.name }}</strong><small>{{ group.members.length }} MEMBERS</small><b>+</b></summary>
+                    <div class="library-type-content">
+                      <p class="library-type-summary-text">{{ group.item.summary }}</p>
+                      <div class="library-code-panel library-type-definition"><span>{{ group.item.kind.toUpperCase() }} DEFINITION &nbsp; / &nbsp; {{ crateDoc.crate.name }}::{{ module.name }}</span><pre><code>{{ typeDeclaration(group) }}</code></pre></div>
+                      @if (typeFields(group).length) {
+                        <section class="library-member-group"><h4>Fields <small>{{ typeFields(group).length }}</small></h4>@for (member of typeFields(group); track member.id) { <article class="library-api-row library-member-row" [id]="'api-' + member.id"><code>{{ member.signature }}</code><p>{{ member.summary }}</p></article> }</section>
+                      }
+                      @if (typeVariants(group).length) {
+                        <section class="library-member-group"><h4>Variants <small>{{ typeVariants(group).length }}</small></h4>@for (member of typeVariants(group); track member.id) { <article class="library-api-row library-member-row" [id]="'api-' + member.id"><code>{{ member.signature }}</code><p>{{ member.summary }}</p></article> }</section>
+                      }
+                      @if (typeMethods(group).length) {
+                        <section class="library-member-group"><h4>{{ group.item.kind === 'trait' ? 'Trait requirements' : 'Methods &amp; associated items' }} <small>{{ typeMethods(group).length }}</small></h4>@for (member of typeMethods(group); track member.id) { <article class="library-api-row library-member-row" [id]="'api-' + member.id"><div><span class="api-kind-chip">{{ member.kind }}</span><strong>{{ member.name }}</strong></div><code>{{ member.signature }}</code><p>{{ member.summary }}</p></article> }</section>
+                        <details class="library-usage-block"><summary>VIEW ANNOTATED MEMBER EXAMPLES <span>{{ typeMethods(group).length }}</span></summary><pre><code>@for (member of typeMethods(group); track member.id) {<span>// {{ member.summary }}
+{{ member.example }}
+
+</span>}</code></pre></details>
+                      }
+                    </div>
+                  </details>
+                }
+
+                @if (module.other.length) {
+                  <section class="library-api-group"><h3>Other public items <small>{{ module.other.length }}</small></h3><div class="library-api-list">@for (item of module.other; track item.id) { <article class="library-api-row" [id]="'api-' + item.id"><div><span class="api-kind-chip">{{ item.kind }}</span><strong>{{ item.name }}</strong></div><code>{{ item.signature }}</code><p>{{ item.summary }}</p></article> }</div><details class="library-usage-block"><summary>VIEW ANNOTATED EXAMPLES <span>{{ module.other.length }}</span></summary><pre><code>@for (item of module.other; track item.id) {<span>// {{ item.summary }}
+{{ item.example }}
+
+</span>}</code></pre></details></section>
+                }
+              </div>
+            </details>
+          }
+        </div>
+      </details>
+    }
+  </section>
+
+  <footer class="library-doc-footer"><div><span>THE SOURCE &nbsp; / &nbsp; GITHUB</span><h2>Explore the implementation.</h2><p>Open the workspace to see crate source, examples, and ongoing changes.</p></div><a class="github-project-link" [href]="project().repository" target="_blank" rel="noreferrer">OPEN {{ project().name.toUpperCase() }} ON GITHUB <span>↗</span></a></footer>
+</article>
